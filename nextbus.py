@@ -1,4 +1,5 @@
-import urllib.request
+#import urllib.request
+import requests
 import xml.etree.ElementTree as ET
 import collections
 
@@ -6,8 +7,9 @@ NEXT_BUS_PREDICTION_URL = 'http://webservices.nextbus.com/service/publicXMLFeed?
 
 def get_all_routes():
 	routeURL = 'http://webservices.nextbus.com/service/publicXMLFeed?command=routeList&a=sf-muni'
-	response = urllib.request.urlopen(routeURL)
-	root = ET.fromstring(response.read())
+	#response = urllib.request.urlopen(routeURL)
+	response = requests.get(routeURL)
+        root = ET.fromstring(response.content)
 	numRoutes = len(root)
 	routeObjs = [{} for _ in range(numRoutes)]
 	for routeObj, route in zip(routeObjs, root):
@@ -20,8 +22,9 @@ def get_all_routes():
 
 def get_stop_id(routeID, stopName, agency='sf-muni'):
 	routeConfigURL = 'http://webservices.nextbus.com/service/publicXMLFeed?command=routeConfig&a={}&r={}'.format(agency, routeID)
-	response = urllib.request.urlopen(routeConfigURL)
-	root = ET.fromstring(response.read())
+	#response = urllib.request.urlopen(routeConfigURL)
+	response = requests.get(routeConfigURL)
+        root = ET.fromstring(response.content)
 	for stop in root[0]:
 		try:
 			if stop.attrib['title'] == stopName: return stop.attrib['tag']
@@ -35,7 +38,6 @@ def get_predictions(stopName='Church St Station Outbound', agency='sf-muni'):
 	allRoutes = get_all_routes()
 	for index, route in enumerate(allRoutes):
 		if not route['tag'][0].isdigit(): 
-			print(route['tag'])
 			mainRoutes.append(route)
 
 	for index, route in enumerate(mainRoutes):
@@ -43,8 +45,9 @@ def get_predictions(stopName='Church St Station Outbound', agency='sf-muni'):
 		stopID = get_stop_id(routeID, stopName)
 		if stopID == None: continue
 		predictionURL = 'http://webservices.nextbus.com/service/publicXMLFeed?command=predictions&a={}&r={}&s={}'.format(agency, routeID, stopID)
-		response = urllib.request.urlopen(predictionURL)
-		respString = response.read()
+		#response = urllib.request.urlopen(predictionURL)
+		response = requests.get(predictionURL)
+                respString = response.content
 		root = ET.fromstring(respString)
 		allPredictions.append((routeID, root))
 
@@ -62,6 +65,11 @@ def parse_predictions(predictionList):
 			counter += 1
 		parsedPredictions[routeId] = trains
 	return parsedPredictions
+
+def get_all_predictions(station):
+	predictionList = get_predictions()
+	preds = parse_predictions(predictionList)
+	return preds
 
 if __name__ == '__main__':
 	predictionList = get_predictions()

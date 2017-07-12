@@ -18,11 +18,12 @@ def launch():
 def next_bus(station):
     predictions = nextbus.get_all_predictions(station)
     speech = "I've found the following trains for {} station: ".format(station)
-    for routeID, preds in predictions:
+    for routeID, preds in predictions.items():
+        if len(preds) == 0: continue
         speech += "There is a {} train ".format(routeID)
         counter = 0
         for p in preds:
-            speech += " in {} minutes "
+            speech += " in {} minutes ".format(p['time'])
             counter += 1
             if counter != len(preds): speech += "and"
             else: speech += ". "
